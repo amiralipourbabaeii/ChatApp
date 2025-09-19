@@ -1,22 +1,47 @@
+from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow, QFileDialog
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QTextCursor
 import sys
-from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow
 import db
 from Login import Ui_Login
 from Signup import Ui_SignUp
-from PyQt5.QtWidgets import QMainWindow
 from Chatapp import Ui_MessageBox
+import shutil
+import os
+from AddContact import Ui_AddContact
+
 
 class ChatApp(QMainWindow):
     def __init__(self, username):
         super().__init__()
         self.ui = Ui_MessageBox()
         self.ui.setupUi(self)
-        self.ui.listWidget.itemClicked.connect(self.select_receiver)
-        self.receiver = None
         self.username = username
+        self.load_contacts()
+        self.receiver = None
         self.ui.pushButton.clicked.connect(self.send_message)
-        usernames = db.get_all_usernames(self.username)
-        self.ui.listWidget.addItems(usernames)  
+        self.ui.pushButton_2.clicked.connect(self.select_file)
+        self.ui.listWidget.itemClicked.connect(self.select_receiver)
+        self.ui.pushButton_3.clicked.connect(self.add_contact)
+        # usernames = db.get_all_usernames(self.username)
+        # self.ui.listWidget.addItems(usernames)
+        
+    
+    def load_contacts(self):
+        self.ui.listWidget.clear()
+        contacts = db.get_contacts(self.username)
+        self.ui.listWidget.addItems(contacts)
+
+    def add_contact(self):
+        from PyQt5.QtWidgets import QInputDialog
+        new_user, ok = QInputDialog.getText(self, "Add Contact", "Enter username:")
+        if ok and new_user:
+            if db.add_contact(self.username, new_user):
+                QMessageBox.information(self, "Success", f"{new_user} added to contacts.")
+                self.load_contacts()
+            else:
+                QMessageBox.warning(self, "Error", "User not found or already in contacts.")
+    
 
     def select_receiver(self, item):
         self.receiver = item.text()
@@ -32,16 +57,27 @@ class ChatApp(QMainWindow):
         elif not self.receiver:
             QMessageBox.warning(self, "Warning", "Please select a user to chat with.")
 
+    def select_file(self):
+        options = QFileDialog.Options()
+        file_path, _ = QFileDialog.getOpenFileName(self, "Select File", "", "All Files (*)", options=options)
+        if file_path:
+            self.send_file(file_path)
+
     def load_chat(self):
         self.ui.textBrowser.clear()
         messages = db.get_messages(self.username, self.receiver)
         for sender, content, timestamp in messages:
             prefix = "You" if sender == self.username else sender
-            self.ui.textBrowser.append(f"{prefix}: {content}")
+            if content.startswith("[File]"):
+                file_name = content.replace("[File]", "").strip()
+                self.ui.textBrowser.append(f"{prefix}: [File]{file_name}")
+            else:
+                self.ui.textBrowser.append(f"{prefix}: {content}")
 
-
-
-
+    def handle_contact(self):
+        self.ContactUi = AddContactForm()
+        self.ContactUi.show()
+    
 class LoginForm(QDialog):
     def __init__(self):
         super().__init__()
@@ -99,6 +135,26 @@ class SignupForm(QDialog):
             self.close()
         else:
             QMessageBox.warning(self, "Warning", "Username already exists.")
+    def __init__(self):
+        super().__init__()
+        self.ui = Ui_AddContact()
+        self.ui.setupUi(self)
+        self.ui.pushButton_2.clicked.connect(self.close_app)
+        
+    def close_app(self):
+        self.close()
+
+# class AddContactForm(QDialog):
+#     def __init__(self):
+#         super().__init__()
+#         self.ui = Ui_AddContact()
+#         self.ui.setupUi(self)
+#         self.ui.pushButton_2.clicked.connect(self.close_app)
+        
+#     def close_app(self):
+#         self.close()
+
+
 
 app = QApplication(sys.argv)
 LoginUi = LoginForm()

@@ -1,7 +1,6 @@
 # Python cache
 __pycache__/
-*.py[cod]
-*.pyo
+files/
 
 # Virtual environments
 venv/
@@ -13,10 +12,13 @@ env/
 # IDE settings
 .vscode/
 .idea/
+db.py
 
 # Text file
 Chatgpt.txt
 Note.txt
+
+*.gitignore
 
 # OS files
 .DS_Store
