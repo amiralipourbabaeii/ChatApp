@@ -36,6 +36,37 @@ CREATE TABLE IF NOT EXISTS Message (
 ''')
 conn.commit()
 
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS GroupChat (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name TEXT UNIQUE,
+    IsChannel INTEGER,
+    Creator TEXT
+)
+''')
+
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS GroupMessage (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    GroupId INTEGER,
+    Sender TEXT,
+    Content TEXT,
+    Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+''')
+conn.commit()
+
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS GroupMembers (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    GroupId INTEGER,
+    Username TEXT
+)
+''')
+
+conn.commit()
+
+
 # ---------------------- توابع ----------------------
 
 def hash_password(password):
@@ -173,3 +204,19 @@ def get_user_groups(username):
     groups = cur.fetchall()
     conn.close()
     return groups  # [(id, name, is_channel), ...]
+
+def get_all_groups():
+    conn = sqlite3.connect("Database.db")
+    cur = conn.cursor()
+    cur.execute("SELECT Id, Name, IsChannel FROM GroupChat")
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+def get_group_by_name(name):
+    conn = sqlite3.connect("Database.db")
+    cur = conn.cursor()
+    cur.execute("SELECT Id, Name, IsChannel, Creator FROM GroupChat WHERE Name=?", (name,))
+    row = cur.fetchone()
+    conn.close()
+    return row
